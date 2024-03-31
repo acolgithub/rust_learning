@@ -51,3 +51,19 @@ pub trait Summary {
 
     fn summarize_author(&self) -> String;
 }
+
+pub fn notify(item: &impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+
+// return value implements summary trait
+fn returns_summarizable() -> impl Summary {
+    Tweet {
+        username: String::from("horse_ebooks"),
+        content: String::from(
+            "of course, as your probably already know, people"
+        ),
+        reply: false,
+        retweet: false,
+    }
+}
