@@ -1,28 +1,35 @@
 // need args function to return iterator of command line arguments passed to minigrep
 use std::env;
 
-// need to be able to read a file
-use std::fs;
+// added process function in order to specify error state
+use std::process;
+
+// add Config from library crate
+use minigrep::Config;
 
 fn main() {
     // form vector of arguments passed to minigrep
     // note that args will panic if argument contains invalid Unicode, use args_os if such arguments are necessary
     let args: Vec<String> = env::args().collect();
 
-    // dbg!(args);  // print the vector using debug macro
+    // store query and file path through config object
+    let config = Config::build(&args).unwrap_or_else(|err| {
 
-    // store arguments that do not correspond to binary name
-    let query = &args[1];
-    let file_path = &args[2];
+        // return error message if not enough arguments
+        println!("Problem parsing arguments: {err}");
+        process::exit(1);
+    });
 
     // print arguments to test
-    println!("Searching for {query}");
-    println!("In file {file_path}");
+    println!("Searching for {}", config.query);
+    println!("In file {}", config.file_path);
 
-    // take file, open it, and return string of the file contents
-    let contents = fs::read_to_string(file_path)
-        .expect("Should have been able to read the file");
+    // get file contents
+    if let Err(e) = minigrep::run(config) {
 
-    // print contents to test
-    println!("With text:\n{contents}");
+        // in the event of error return print error message and exit
+        println!("Application error: {e}");
+        process::exit(1);
+    }
+
 }
