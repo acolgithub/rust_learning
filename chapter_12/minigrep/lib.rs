@@ -40,6 +40,47 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     // print contents to test
     println!("With text:\n{contents}");
 
+    // print each line where query is found
+    for line in search(&config.query, &contents) {
+        println!("{line}");
+    }
+
     Ok(())
 
+}
+
+// create search function
+pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    
+    // vector to store lines containing query
+    let mut results = Vec::new();
+
+    // iterate over lines
+    for line in contents.lines() {
+
+        // if line contains query add to vector
+        if line.contains(query) {
+            results.push(line);
+        }
+    }
+
+    // return results
+    results
+}
+
+// run test on search function
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn one_result() {
+        let query = "duct";
+        let contents = "\
+Rust:
+safe, fast, productive.
+Pick three.";
+
+        assert_eq!(vec!["safe, fast, productive."], search(query, contents));
+    }
 }
