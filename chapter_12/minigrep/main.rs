@@ -16,7 +16,8 @@ fn main() {
     let config = Config::build(&args).unwrap_or_else(|err| {
 
         // return error message if not enough arguments
-        // println!("Problem parsing arguments: {err}");
+        // used eprintln to print to std err
+        eprintln!("Problem parsing arguments: {err}");
         process::exit(1);
     });
 
@@ -28,7 +29,8 @@ fn main() {
     if let Err(e) = minigrep::run(config) {
 
         // in the event of error return print error message and exit
-        // println!("Application error: {e}");
+        // used eprintln to print to std err
+        eprintln!("Application error: {e}");
         process::exit(1);
     }
 
