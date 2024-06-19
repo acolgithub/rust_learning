@@ -19,21 +19,34 @@ impl Config {
 
     // create instance of Config with provided arguments
     // made pub so that we can use it
-    pub fn build(args: &[String]) -> Result<Config, &'static str> {
+    // iterating over args mutates it so we declared mut
+    pub fn build(
+        mut args: impl Iterator<Item = String>
+    ) -> Result<Config, &'static str> {
 
-        // check that slice is long enough before accessing
-        if args.len() < 3 {
-            return Err("not enough arguments");
-        }
+        // move iterator forward one to skip file name
+        args.next();
 
-        let query = args[1].clone();
-        let file_path = args[2].clone();
+        // get query if available otherwise return error
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a query string")
+        };
+
+        // get file path of available otherwise return error
+        let file_path = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a file path")
+        };
 
         // check if environment variable named IGNORE_CASE is set and assign to ignore_case
         let mut ignore_case = env::var("IGNORE_CASE").is_ok();
 
         // if user specifies any argument in args for case then override environment variable
-        ignore_case = if args.len() > 3 {args[3].len() > 0} else {ignore_case};
+        ignore_case = match args.next() {
+            Some(arg) => true,
+            None => false
+        };
 
         Ok(Config {
             query,
@@ -72,21 +85,12 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 
 // create search function
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    
-    // vector to store lines containing query
-    let mut results = Vec::new();
 
     // iterate over lines
-    for line in contents.lines() {
-
-        // if line contains query add to vector
-        if line.contains(query) {
-            results.push(line);
-        }
-    }
-
-    // return results
-    results
+    contents
+        .lines()
+        .filter(|line| line.contains(query))  // check that line contains query
+        .collect()
 }
 
 // create case insensitive search function

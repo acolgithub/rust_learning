@@ -13,7 +13,8 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     // store query and file path through config object
-    let config = Config::build(&args).unwrap_or_else(|err| {
+    // used iterator obtained through env::args()
+    let config = Config::build(env::args()).unwrap_or_else(|err| {
 
         // return error message if not enough arguments
         // used eprintln to print to std err
