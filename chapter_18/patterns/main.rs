@@ -73,4 +73,21 @@ fn main() {
     let point = (3, 5);
     print_coordinates(&point);
 
+
+    // refutable and irrefutable patterns
+
+    // some_option_value could be none so this will not compile
+    let some_option_value = Some(5);
+    // let Some(x) = some_option_value;  // cannot deal with none case
+
+    // we can fix this code by using if let
+    if let Some(x) = some_option_value {
+        println!("{x}");
+    }
+
+    // compiler gives warning if you include irrefutable pattern where refutable is expected
+    // if let is intended for refutable patterns
+    if let x = 5 {
+        println!("{x}");
+    };
 }
