@@ -13,13 +13,44 @@ struct Point {
 }
 
 
+
+// enum to represent colour
+enum Colour {
+    Rgb(i32, i32, i32),
+    Hsv(i32, i32, i32)
+}
+
+
 // enum to represent message
 enum Message {
     Quit,
     Move {x: i32, y: i32},
     Write(String),
-    ChangeColor(i32, i32, i32)
+    ChangeColor(Colour)
 }
+
+
+
+// function that uses _ to ignore a value
+fn foo(_: i32, y: i32) {
+    println!("This code only uses the y parameter: {y}");
+}
+
+
+
+// struct for 3D point
+struct ThreeDPoint {
+    x: i32,
+    y: i32,
+    z: i32
+}
+
+
+// hello enum
+enum hMessage {
+    Hello {id: i32}
+}
+
 
 
 fn main() {
@@ -203,7 +234,7 @@ fn main() {
     // destructuring enums
     
     // try different variant of Message to see various arms
-    // let msg = Message::ChangeColor(0, 160, 255);
+    // let msg = Message::ChangeColor(Color::Rgb(0, 160, 255));
     // let msg = Message::Write("my message".to_string());
     // let msg = Message::Move{x: 3, y: 5};
     let msg = Message::Quit;
@@ -218,8 +249,196 @@ fn main() {
         Message::Write(text) => {
             println!("Text message: {text}");
         }
-        Message::ChangeColor(r, g, b) => {
+
+        // need to add both arms of enum Colour in order to be exhaustive
+        Message::ChangeColor(Colour::Rgb(r, g, b)) => {
             println!("Change the color to red {r}, green {g}, and blue {b}")
         }
+        Message::ChangeColor(Colour::Hsv(h, s, v)) => {
+            println!("Change colour to hue {h}, saturation {s}, and value {v}")
+        }
+    }
+
+
+
+    // destructuring nested structs and enums
+
+    let msg = Message::ChangeColor(Colour::Hsv(0, 160, 255));
+
+    match msg {
+        Message::ChangeColor(Colour::Rgb(r, g, b)) => {
+            println!("Change colour to red {r}, green {g}, and blue {b}");
+        }
+        Message::ChangeColor(Colour::Hsv(h, s, v)) => {
+            println!("Change colour to hue {h}, saturation {s}, and value {v}")
+        }
+        _ => ()
+    }
+
+
+
+    // destructuring structs and tuples
+
+    // complex destructuring involving tuple and struct types contained in tuple
+    let ((feet, inches), Point {x, y}) = ((3, 16), Point {x: 3, y:-10});
+
+    println!("{} feet {} inches, ({}, {})", feet, inches, x, y);
+
+
+
+
+    // ignoring values in a pattern
+
+    // ignoring an entire value with _
+    // this function ignores the first parameter
+    foo(3, 4);
+
+
+    // ignoring parts of a value with a nested _
+    let mut setting_value = Some(5);
+    let new_setting_value = Some(10);
+
+    match (setting_value, new_setting_value) {
+
+        // check if tuple both contain something
+        (Some(_), Some(_)) => {
+            println!("Can't overwrite an existing customized value");
+        }
+
+        // otherwise reset mutable first component to the second
+        _ => {
+            setting_value = new_setting_value;
+        }
+    }
+
+    // since both entries were not None then should print Some(5)
+    println!("setting is {setting_value:?}");
+
+
+    // we can ignore multiple elements from tuple using _
+    let numbers = (2, 4, 8, 16, 32);
+
+    match numbers {
+
+        // ignore second and fourth entries
+        (first, _, third, _, fifth) => {
+            println!("Some numbers: {first}, {third}, {fifth}")
+        }
+    }
+
+
+
+    // ignoring an unused variable by starting its name with _
+
+    // first variable is ignored
+    let _x = 5;
+    let y = 10;  // second variable is not ignored, may get warning if not used
+
+
+    // note that variables starting with _ still bind to value while _ alone does not
+    // for this reason the following program causes an error since _s borrows value from s
+    let s = Some(String::from("Hello!"));
+
+    // if let Some(_s) = s {
+    //     println!("found a string");
+    // }
+
+    // println!("{s:?}");
+
+    // the code that follows compiles since _ alone does not borrow
+    if let Some(_) = s {
+        println!("found a string");
+    }
+
+    println!("{s:?}");
+
+
+
+    // ignoring remaining parts of a value with ..
+
+    let origin = ThreeDPoint {x: 0, y: 0, z: 0};
+
+    // get x value of any point, remaining coordinates do not matter
+    match origin {
+        ThreeDPoint {x, ..} => println!("x is {x}"),
+    }
+
+    // example with tuple
+    let numbers = (2, 4, 8, 16, 32);
+
+    // match only the first and last number
+    match numbers {
+        (first, .., last) => {
+            println!("Some numbers: {first}, {last}");
+        }
+    }
+
+    // however, using .. must be unambiguous
+    // the below example could have second be any number in the middle so results in error
+    // match numbers {
+    //     (.., second, ..) => {
+    //         println!("Some numbers: {second}")
+    //     };
+    // }
+
+    // using the pattern twice is also ambiguous and results in error
+    // match numbers {
+    //     (first, .., .., last) => {
+    //         println!("Some numbers: {first}, {last}");
+    //     }
+    // }
+
+
+
+    // extra conditionals with match guards
+
+    let num = Some(4);
+
+    // includes match guard in first arm
+    // first arm must have num match Some(x) and then it must have x % 2 be zero
+    match num {
+        Some(x) if x % 2 == 0 => println!("The number {x} is even"),
+        Some(x) => println!("The number {x} is odd"),
+        None => ()
+    }
+
+
+    let num =Some(5);
+
+    // match will now print that x is odd since match guard condition fails
+    match num {
+        Some(x) if x % 2 == 0 => println!("The number {x} is even"),
+        Some(x) => println!("The number {x} is odd"),
+        None => ()
+    }
+
+
+    // we can use match guards in order to add match conditions against other variables
+    let x = Some(5);
+    let y = 10;
+
+    // variable y does not shadow outer variable
+    match x {
+        Some(50) => println!("Got 50"),
+        Some(n) if n == y => println!("Matched, n = {n}"),
+        _ => println!("Default case, x = {x:?}")
+    }
+
+    println!("at the end: x = {x:?}, y = {y}");
+
+
+
+    // @ bindings
+
+    let msg = hMessage::Hello {id: 5};
+
+    match msg {
+        hMessage::Hello {
+            id: id_variable @ 3..=7,  // creates id_variable as you are testing
+        } => println!("Found an id in range: {id_variable}"),  // created variable can be used here
+        hMessage::Hello {id: 10..=12} => {
+            println!("Found an id in another range")
+        }
+        hMessage::Hello{id} => println!("Found some other id: {id}")
     }
 }
