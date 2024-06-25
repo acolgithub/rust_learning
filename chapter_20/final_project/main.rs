@@ -1,7 +1,7 @@
 // for listener and reader
 use std::{
     io::{prelude::*, BufReader},
-    net::TcpListener
+    net::{TcpListener, TcpStream}
 };
 
 fn main() {
@@ -15,7 +15,8 @@ fn main() {
     for stream in listener.incoming() {
         let stream = stream.unwrap();  // unwrap is used to stop program if error occurs
 
-        println!("Connection established!");
+        // separate function which handles processing connections
+        handle_connection(stream);
     }
 
     
@@ -23,17 +24,21 @@ fn main() {
 
 
 // function to read data being sent from browser
-fn handle_connection(mut_stream: TcpStream) {
+fn handle_connection(mut stream: TcpStream) {
 
     // add buffering by managing calls to std::io::Read trait method
-    let buf_reader = BufReader::new (&mut stream);
+    let buf_reader = BufReader::new(&mut stream);
 
-    // collect the lines of request the browser sends to server
+    // collect the lines of request the browser sends to our server
     let http_request: Vec<_> = buf_reader
         .lines()
-        .map(|result| result.unwrap())
-        .take_while(|line| !line.is_empty())
+        .map(|result| result.unwrap())        // get each string
+        .take_while(|line| !line.is_empty())  // detect end of stream by second new line
         .collect();
 
-    println!("Request: {http_request:#?}");
+    // create response to request when successful
+    let response = "HTTP/1.1 200 OK\r\n\r\n";
+
+    // convert response to bytes and write to stream
+    stream.write_all(response.as_bytes()).unwrap();
 }
