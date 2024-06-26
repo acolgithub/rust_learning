@@ -1,5 +1,6 @@
 // for listener and reader
 use std::{
+    fs,
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream}
 };
@@ -36,8 +37,18 @@ fn handle_connection(mut stream: TcpStream) {
         .take_while(|line| !line.is_empty())  // detect end of stream by second new line
         .collect();
 
+    // get HTTP success status
+    let status_line = "HTTP/1.1 200 OK";
+
+    // get contents from html file
+    let contents = fs::read_to_string("hello.html").unwrap();
+
+    // get length of contents
+    let length = contents.len();
+
     // create response to request when successful
-    let response = "HTTP/1.1 200 OK\r\n\r\n";
+    let response =
+        format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
 
     // convert response to bytes and write to stream
     stream.write_all(response.as_bytes()).unwrap();
