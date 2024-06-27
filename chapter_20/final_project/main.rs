@@ -31,25 +31,26 @@ fn handle_connection(mut stream: TcpStream) {
     let buf_reader = BufReader::new(&mut stream);
 
     // collect the lines of request the browser sends to our server
-    let http_request: Vec<_> = buf_reader
-        .lines()
-        .map(|result| result.unwrap())        // get each string
-        .take_while(|line| !line.is_empty())  // detect end of stream by second new line
-        .collect();
+    let request_line = buf_reader.lines().next().unwrap().unwrap();
 
-    // get HTTP success status
-    let status_line = "HTTP/1.1 200 OK";
+    //
+    if request_line == "GET / HTTP/1.1" {
 
-    // get contents from html file
-    let contents = fs::read_to_string("hello.html").unwrap();
+        // get HTTP success status
+        let status_line = "HTTP/1.1 200 OK";
 
-    // get length of contents
-    let length = contents.len();
+        // get contents from html file
+        let contents = fs::read_to_string("hello.html").unwrap();
 
-    // create response to request when successful
-    let response =
-        format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
+        // get length of contents
+        let length = contents.len();
 
-    // convert response to bytes and write to stream
-    stream.write_all(response.as_bytes()).unwrap();
+        // create response to request when successful
+        let response = format!(
+            "{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}"
+        );
+
+        // convert response to bytes and write to stream
+        stream.write_all(response.as_bytes()).unwrap();
+    }
 }
