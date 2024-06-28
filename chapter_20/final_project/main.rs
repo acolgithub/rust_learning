@@ -30,27 +30,29 @@ fn handle_connection(mut stream: TcpStream) {
     // add buffering by managing calls to std::io::Read trait method
     let buf_reader = BufReader::new(&mut stream);
 
-    // collect the lines of request the browser sends to our server
+    // read only first line of HTTP request by calling next
+    // use first unwrap to handle option in case iterator has no items
+    // use second unwrap to handle the result
     let request_line = buf_reader.lines().next().unwrap().unwrap();
 
-    //
-    if request_line == "GET / HTTP/1.1" {
+    // get status and appropriate file
+    let (status_line, filename) =  if request_line == "GET / HTTP/1.1" {
+        ("HTTP/1.1 200 OK", "hello.html")
+    } else {
+        ("HTTP/1.1 404 NOT FOUND", "404.html")
+    };
 
-        // get HTTP success status
-        let status_line = "HTTP/1.1 200 OK";
+    // get contents from html file
+    let contents = fs::read_to_string(filename).unwrap();
 
-        // get contents from html file
-        let contents = fs::read_to_string("hello.html").unwrap();
+    // get length of contents
+    let length = contents.len();
 
-        // get length of contents
-        let length = contents.len();
+    // create response to request when successful
+    let response = format!(
+        "{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}"
+    );
 
-        // create response to request when successful
-        let response = format!(
-            "{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}"
-        );
-
-        // convert response to bytes and write to stream
+    // convert response to bytes and write to stream
         stream.write_all(response.as_bytes()).unwrap();
-    }
 }
