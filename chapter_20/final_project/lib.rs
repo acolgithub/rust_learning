@@ -1,5 +1,9 @@
+use std::thread;
+
 // create threadpool struct
-pub struct ThreadPool;
+pub struct ThreadPool {
+    threads: Vec<thread::JoinHandle<()>>
+}
 
 
 impl ThreadPool {
@@ -17,7 +21,16 @@ impl ThreadPool {
         // check if size is positive and panic otherwise
         assert!(size > 0);
 
-        ThreadPool
+        // initalize threads vector with capacity matching given size
+        let mut threads = Vec::with_capacity(size);
+
+        // loop to create threads
+        for _ in 0..size {
+            // create some threads and store them in the vector
+        }
+
+        // create threadpool vector
+        ThreadPool {threads}
     }
 
     // create new execute implemtation
