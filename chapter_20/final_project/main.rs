@@ -7,6 +7,10 @@ use std::{
     time::Duration
 };
 
+// add library
+mod lib;
+
+
 fn main() {
 
     // create listener which monitors local address 127.0.0.1:7878
@@ -15,7 +19,7 @@ fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();  // 7878 is a port that usually doesn't accept HTTP but is rust typed on a telephone
 
     // create thread pool
-    let pool = ThreadPool::new(5);
+    let pool = lib::ThreadPool::new(5);
 
     // when listener gets an incoming stream print connection established
     for stream in listener.incoming() {
