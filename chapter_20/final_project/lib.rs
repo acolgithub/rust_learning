@@ -10,7 +10,10 @@ pub struct ThreadPool {
 }
 
 
-struct Job;
+// changed to type alias for a trait object that holds type of closure
+// execute receives
+// note that 'Job' abbreviates a long type
+type Job = Box<dyn FnOnce() + Send + 'static>;
 
 
 impl ThreadPool {
@@ -53,8 +56,13 @@ impl ThreadPool {
     // used FnOnce since we intend to pass argument to spawn which uses this
     pub fn execute<F>(&self, f: F)
     where
-        F: FnOnce() + Send + 'static
+        F: FnOnce() + Send + 'static,
     {
+        // allocate memory on the heap and place Job on it 
+        let job = Box::new(f);
+
+        // send job down channel
+        self.sender.send(job).unwrap();
     }
 }
 
@@ -70,8 +78,14 @@ struct Worker {
 impl Worker {
 	fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
 		// spawn new thread for worker
-		let thread = thread::spawn(|| {
-            receiver;
+		let thread = thread::spawn(move || loop {  // closure loops forever asking receiver end for a job and running when it gets one
+            
+            // run job after locking, unwrap to panic on errors
+            let job = receiver.lock().unwrap().recv().unwrap();
+
+            println!("Worker {id} got a job; executing.");
+
+            job();
         });
 
 		// create worker with id
