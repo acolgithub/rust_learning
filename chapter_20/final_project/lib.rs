@@ -16,6 +16,28 @@ pub struct ThreadPool {
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 
+// implement drop trait for threadpool
+impl Drop for ThreadPool {
+
+    // when pool is dropped thread should join to make sure work is finished
+    fn drop(&mut self) {  // provided reference since we need to be able to mutate worker
+
+        // iterate over workers
+        for worker in &mut self.workers {
+
+            // message to indicate shutdown of worker
+            println!("Shutting down worker {}", worker.id);
+
+            if let Some(thread) = worker.thread.take() {
+
+                // call join on worker thread
+                worker.thread.join().unwrap();  // if join fails unwrap will make Rust panic
+            }
+        }
+    }
+}
+
+
 impl ThreadPool {
     /// Create a new ThreadPool.
     ///
@@ -71,7 +93,7 @@ impl ThreadPool {
 // struct is private since only library needs implementation details
 struct Worker {
 	id: usize,
-	thread: thread::JoinHandle<()>
+	thread: Option<thread::JoinHandle<()>>  // modified to allow take method on Option to move value out of Some and leave None
 }
 
 // create new worker instance
@@ -89,7 +111,7 @@ impl Worker {
         });
 
 		// create worker with id
-		Worker {id, thread}
+		Worker {id, Some(thread)}  // include Some to indicate worker is running
 	}
 }
 
