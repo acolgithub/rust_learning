@@ -6,7 +6,7 @@ use std::{
 // create threadpool struct
 pub struct ThreadPool {
     workers: Vec<Worker>,
-    sender: mpsc::Sender<Job>  // holds sender
+    sender:Option<mpsc::Sender<Job>>  // holds sender, used option to be able to extract job
 }
 
 
@@ -22,6 +22,10 @@ impl Drop for ThreadPool {
     // when pool is dropped thread should join to make sure work is finished
     fn drop(&mut self) {  // provided reference since we need to be able to mutate worker
 
+        // drop sender before waiting for the threads to finish
+        // channel is now closed so no more messages will be sent
+        drop(self.sender.take());
+
         // iterate over workers
         for worker in &mut self.workers {
 
@@ -31,7 +35,7 @@ impl Drop for ThreadPool {
             if let Some(thread) = worker.thread.take() {
 
                 // call join on worker thread
-                worker.thread.join().unwrap();  // if join fails unwrap will make Rust panic
+                thread.join().unwrap();  // if join fails unwrap will make Rust panic
             }
         }
     }
@@ -71,7 +75,10 @@ impl ThreadPool {
         }
 
         // create threadpool vector
-        ThreadPool {workers, sender}
+        ThreadPool {
+            workers,
+            sender: Some(sender)  // created with Some instance to have a sender
+        }
     }
 
     // create new execute implemtation
@@ -84,7 +91,7 @@ impl ThreadPool {
         let job = Box::new(f);
 
         // send job down channel
-        self.sender.send(job).unwrap();
+        self.sender.as_ref().unwrap().send(job).unwrap();
     }
 }
 
@@ -101,17 +108,30 @@ impl Worker {
 	fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
 		// spawn new thread for worker
 		let thread = thread::spawn(move || loop {  // closure loops forever asking receiver end for a job and running when it gets one
-            
+
             // run job after locking, unwrap to panic on errors
-            let job = receiver.lock().unwrap().recv().unwrap();
+            let message = receiver.lock().unwrap().recv();
 
-            println!("Worker {id} got a job; executing.");
+            match message {
+                Ok(job) => {
+                    println!("Worker {id} got a job; executing.");
 
-            job();
+                    job();
+                }
+
+                Err(_) => {
+                    println!("Worker {id} got disconnected; shutting down.");
+                    break;  // break infinite loop when sender is dropped and channel is closed, no more messages will be sent
+                }
+            }
+
         });
 
 		// create worker with id
-		Worker {id, Some(thread)}  // include Some to indicate worker is running
+		Worker {
+            id,
+            thread: Some(thread)
+        }  // include Some to indicate worker is running
 	}
 }
 
